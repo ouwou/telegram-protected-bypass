@@ -39,10 +39,18 @@ DWORD WINAPI ThreadRoutine(LPVOID lpThreadParameter) {
     }
     if (textSize == 0) return FALSE;
 
-    auto ptr = scan("\xc1\xe8\x14\xf6\xd0\x24\x01\xc3", "xxxxxxxx", (uint8_t *)hmod, textSize);
+    // patch PeerData::allowsForwarding
+    auto ptr = scan("\x48\x85\xC0\x74\x00\xB0\x00\xC3\x41", "xxxx?x?xx", (uint8_t *)hmod, textSize);
     DWORD old;
     VirtualProtect(ptr, 10, PAGE_EXECUTE_READWRITE, &old);
-    ptr[5] = 0xB0;
+    ptr[3] = 0x90;
+    ptr[4] = 0x90;
+    VirtualProtect(ptr, 10, old, &old);
+
+    // patch HistoryInner::showCopyRestrictionForSelected
+    ptr = scan("\x80\x7B\x00\x00\x75\x00\x0F\x1F\x00\x48\x8B\x53", "xx??x?xxxxxx", (uint8_t*)hmod, textSize);
+    VirtualProtect(ptr, 10, PAGE_EXECUTE_READWRITE, &old);
+    ptr[4] = 0xEB;
     VirtualProtect(ptr, 10, old, &old);
 
     return FALSE;
